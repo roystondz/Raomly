@@ -10,6 +10,7 @@ const variants = {
   filled: { container: "size-14 bg-surface-muted", icon: 24 },
   overlay: { container: "size-8 bg-surface shadow-raised", icon: 18 },
   plain: { container: "size-10", icon: 20 },
+  outline: { container: "size-11 border border-line bg-surface", icon: 24 },
 } as const;
 
 export type IconButtonProps = Omit<PressableProps, "children" | "style"> & {

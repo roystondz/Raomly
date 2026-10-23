@@ -1,8 +1,8 @@
-import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
+import { GlassView } from "expo-glass-effect";
 import type { LucideIcon } from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
+import { useGlassAvailable } from "@/hooks/use-glass-available";
 import { cn } from "@/utils/cn";
 
 import { Icon } from "./icon";
@@ -16,16 +16,6 @@ export type GlassTabBarProps<K extends string> = {
   onSelect: (key: K) => void;
   className?: string;
 };
-
-function useGlassAvailable() {
-  const [reduceTransparency, setReduceTransparency] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceTransparencyEnabled().then(setReduceTransparency, () => {});
-    const sub = AccessibilityInfo.addEventListener("reduceTransparencyChanged", setReduceTransparency);
-    return () => sub.remove();
-  }, []);
-  return Platform.OS === "ios" && isGlassEffectAPIAvailable() && !reduceTransparency;
-}
 
 export function GlassTabBar<K extends string>({ items, activeKey, onSelect, className }: GlassTabBarProps<K>) {
   const glass = useGlassAvailable();

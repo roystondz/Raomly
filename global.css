@@ -47,11 +47,16 @@
   --color-info-50: #e8eeff; /* ≈ */
   --color-info-700: #3451c7; /* ≈ */
   --color-on-ink: #ffffff;
+  --color-scrim: rgba(11, 11, 26, 0.45); /* ≈ dark glass fallback over photos */
+  --color-on-image-line: rgba(255, 255, 255, 0.35); /* ≈ hairline over photos */
 
   /* Line heights are unitless ratios (NativeWind multiplies them by font size); comments give the px result. */
   --text-display: 56px;
   --text-display--line-height: 1; /* 56 */
   --text-display--letter-spacing: -1px; /* ≈ */
+  --text-hero: 40px; /* ≈ */
+  --text-hero--line-height: 1; /* 40 */
+  --text-hero--letter-spacing: -1px; /* ≈ */
   --text-title: 28px;
   --text-title--line-height: 1.2143; /* 34 */
   --text-title-sm: 20px; /* ≈ */
@@ -68,6 +73,9 @@
   --text-footnote--line-height: 1.3333; /* 16 */
   --text-button: 17px;
   --text-button--line-height: 1.2941; /* 22 */
+  /* Inputs set size only: a line height makes iOS clip text while editing. */
+  --text-input: 16px;
+  --text-input-sm: 14px; /* ≈ home prompt field */
 
   --radius-sm: 8px;
   --radius-md: 12px;

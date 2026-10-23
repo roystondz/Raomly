@@ -20,6 +20,7 @@ npx eas-cli@latest <cmd>    # EAS builds, submits, and updates (use instead of b
 
 - Expo ships breaking changes every SDK release, so don't trust memory. Before touching an Expo, EAS, or React Native API, check the `expo` major version in `package.json` and read `https://docs.expo.dev/versions/v<major>.0.0/`. For anything else, start from https://docs.expo.dev/llms.txt and follow its links.
 - Routes live in `src/app/`: every file is a screen and `_layout.tsx` files define navigators. API routes are `src/app/api/*+api.ts`. Keep components, hooks, and utils outside `src/app/`.
+- Navigation: the root Stack hides headers and screens opt in. The root layout holds the splash until Clerk `isLoaded`, then guards with `Stack.Protected`: signed out → `index` (onboarding) + `(auth)`, signed in → `(app)`. Each guard needs `redirectTo` (`/home` and `/`), because onboarding owns `/` and a signed-in guest would otherwise land on an unmatched route. Screens never navigate after an auth change; the guard redirects.
 - `ios/` and `android/` are generated. Never create or edit them by hand; configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, switch to a development build (`npx expo run:ios`).
 
@@ -27,7 +28,12 @@ npx eas-cli@latest <cmd>    # EAS builds, submits, and updates (use instead of b
 
 Each tool has one job. Ask before moving a responsibility to a different tool.
 
-- **Auth:** Clerk is the source of truth. The app keeps its own custom auth screens. Set Clerk up through the Clerk CLI and use the Clerk MCP for current Expo patterns.
+- **Auth:** Clerk is the source of truth. The app keeps its own custom auth screens. Set Clerk up through the Clerk CLI and use the Clerk MCP (or the installed Clerk skills) for current Expo patterns.
+  - Custom flows use `@clerk/expo` method-based hooks: `signUp.password`, `signUp.verifications.*`, `signIn.password`, `signIn.mfa.*`, `finalize`. Never the legacy `setActive`/`prepareFirstFactor` flow; only `useSSO` (Google) uses `setActive`.
+  - Sessions persist with `tokenCache` (`@clerk/expo/token-cache`).
+  - Sign-up screens render `<View nativeID="clerk-captcha" />`.
+  - Instance config changes go through `clerk config patch` with `--dry-run` first.
+  - First/last name are enabled (optional); "Full name" is split in code (`src/auth/split-name.ts`).
 - **Content:** Sanity (properties, hosts, policies, house rules). Studio is a standalone app in `studio/`. Schema deploys and content changes go through the Sanity MCP, and generated property copy uses Agent Actions.
 - **Exact constraints** (price, guests, type, amenities, pets, place): GROQ filters, with values always passed as params.
 - **Soft intent** (quiet, cozy, secluded): Dataset Embeddings via `text::semanticSimilarity()` inside `score()`.
@@ -38,7 +44,7 @@ Each tool has one job. Ask before moving a responsibility to a different tool.
 
 ## Rules
 
-- Secret keys (Clerk secret key, TypeSafe key, Sanity organization token, Sanity write token) never reach the app bundle. Use them only in API routes and local scripts such as seeding. Never put them behind `EXPO_PUBLIC_`, which is bundled into the app. Never commit `.env`. Keep variable names, without values, in `.env.example`.
+- Secret keys (Clerk secret key, TypeSafe key, Sanity organization token, Sanity write token) never reach the app bundle. Use them only in API routes and local scripts such as seeding. Never put them behind `EXPO_PUBLIC_`, which is bundled into the app. Never commit `.env`. Keep variable names, without values, in `.env.example` (`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`).
 - Sanity Context needs a deployed Studio for the dataset. Redeploy Studio from `studio/` after schema changes.
 - Jev is not an agent. It answers typed questions (Choice, Noul, Score) with probabilities. It never writes GROQ, calls tools, or generates text. Code builds queries from its answers.
 - Prices, guest counts, and dates are parsed in code. Jev may choose between candidates code found, but never produces the value.
@@ -77,10 +83,12 @@ Designs are attached in the chat. Screens must match them exactly: layout, spaci
 
 - Tokens live only in `global.css` `@theme`. `src/theme/colors.ts` mirrors colors only for color props (icons, Switch, placeholders, GlassView); keep the two in sync. No hex values elsewhere.
 - Tailwind's default palette and type/radius/shadow scales are removed. Spacing is `--spacing: 4px` because native rem is 14.
+- `TextInput`s use `text-input` (font size, no line height). A line height makes iOS push typed text down and clip it while editing.
 - Line heights are unitless ratios (`--text-x--line-height: 1.5`). NativeWind multiplies them by font size, so px values make text hundreds of points tall.
 - Font is Plus Jakarta Sans, one family per weight (`font-sans`, `font-sans-medium`, `font-sans-bold`), embedded with the expo-font config plugin. It only shows in the dev build (`npx expo run:ios`), not Expo Go. Never use `font-bold`.
 - Icons are Lucide through `src/components/ui/icon.tsx`. The wordmark is `src/components/ui/logo.tsx` (source `assets/images/logo.svg`).
 - Shared components are in `src/components/ui/`. Screens use `Text` variants, never font or size classes. Don't pass two classes for the same property (e.g. a font class over a variant); add a variant instead.
+- Text and icons over photos follow the photo's tone: `ink` on light tops, `on-ink` on dark. Glass over photos uses `useGlassAvailable` (`src/hooks/`) with `scrim`/`surface-glass` fallbacks.
 - Light mode only for now.
 - `/design-system` is the dev-only gallery of every component, for comparing against designs.
 

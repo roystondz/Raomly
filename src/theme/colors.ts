@@ -25,6 +25,8 @@ export const colors = {
   "info-50": "#E8EEFF",
   "info-700": "#3451C7",
   "on-ink": "#FFFFFF",
+  scrim: "rgba(11, 11, 26, 0.45)",
+  "on-image-line": "rgba(255, 255, 255, 0.35)",
 } as const;
 
 export type ColorToken = keyof typeof colors;

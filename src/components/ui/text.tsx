@@ -4,12 +4,14 @@ import { cn } from "@/utils/cn";
 
 const variants = {
   display: "font-sans-bold text-display",
+  hero: "font-sans-bold text-hero",
   title: "font-sans-bold text-title",
   "title-sm": "font-sans-bold text-title-sm",
   headline: "font-sans-bold text-headline",
   body: "font-sans text-body",
   label: "font-sans-medium text-label",
   caption: "font-sans-medium text-caption",
+  "caption-regular": "font-sans text-caption",
   footnote: "font-sans text-footnote",
   "footnote-medium": "font-sans-medium text-footnote",
   button: "font-sans-medium text-button",

@@ -7,11 +7,13 @@ import {
   Briefcase,
   Building2,
   Calendar,
+  ChevronLeft,
   CreditCard,
   FileText,
   Heart,
   House,
   List,
+  Mail,
   Map,
   MapPin,
   MessageSquareMore,
@@ -33,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { GlassTabBar } from "@/components/ui/glass-tab-bar";
+import { GoogleMark } from "@/components/ui/google-mark";
 import { Icon } from "@/components/ui/icon";
 import { IconButton } from "@/components/ui/icon-button";
 import { ListGroup, ListRow } from "@/components/ui/list-group";
@@ -69,17 +72,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-// PLACEHOLDER: the Google "G" is a brand asset; replace with assets/images/google-g.png when provided.
-function GoogleMarkPlaceholder() {
-  return (
-    <View className="size-6 items-center justify-center rounded-full border border-dashed border-muted">
-      <Text variant="footnote-medium" tone="muted">
-        G
-      </Text>
-    </View>
-  );
-}
-
 export default function DesignSystemScreen() {
   const [chip, setChip] = useState("Cabins");
   const [category, setCategory] = useState("All Stays");
@@ -94,7 +86,7 @@ export default function DesignSystemScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Design system" }} />
+      <Stack.Screen options={{ title: "Design system", headerShown: true }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         className="flex-1 bg-surface-muted"
@@ -133,7 +125,7 @@ export default function DesignSystemScreen() {
 
         <Section title="04. Buttons">
           <Button title="Book this stay" trailing={<Icon icon={ArrowRight} />} />
-          <Button variant="secondary" title="Continue with Google" leading={<GoogleMarkPlaceholder />} />
+          <Button variant="secondary" title="Continue with Google" leading={<GoogleMark />} />
           <Button title="Loading" loading />
           <Button title="Disabled" disabled />
           <View className="flex-row gap-4">
@@ -141,6 +133,7 @@ export default function DesignSystemScreen() {
             <IconButton icon={Share} accessibilityLabel="Share" />
             <IconButton icon={Search} accessibilityLabel="Search" />
             <IconButton icon={Bookmark} accessibilityLabel="Bookmark" />
+            <IconButton variant="outline" icon={ChevronLeft} accessibilityLabel="Back" />
           </View>
         </Section>
 
@@ -149,6 +142,8 @@ export default function DesignSystemScreen() {
           <TextField icon={User} placeholder="Enter your name" />
           <TextField icon={User} defaultValue="Joanna Smith" />
           <TextField variant="password" defaultValue="password1" />
+          <TextField icon={Mail} label="Email address" placeholder="you@example.com" />
+          <TextField icon={Mail} label="Email address" defaultValue="taken@example.com" error="That email is already in use." />
         </Section>
 
         <Section title="06. Filter chips">
@@ -169,6 +164,23 @@ export default function DesignSystemScreen() {
                 key={c.label}
                 size="sm"
                 tone="primary"
+                icon={c.icon}
+                label={c.label}
+                selected={category === c.label}
+                onPress={() => setCategory(c.label)}
+              />
+            ))}
+          </View>
+          <View className="flex-row flex-wrap gap-2.5">
+            {[
+              { label: "All Stays", icon: House },
+              { label: "Cabins", icon: TreePine },
+              { label: "Beach", icon: Waves },
+            ].map((c) => (
+              <Chip
+                key={c.label}
+                tone="primary"
+                appearance="muted"
                 icon={c.icon}
                 label={c.label}
                 selected={category === c.label}

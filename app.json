@@ -43,7 +43,9 @@
             "./assets/fonts/PlusJakartaSans-Bold.ttf"
           ]
         }
-      ]
+      ],
+      "expo-secure-store",
+      "@clerk/expo"
     ],
     "experiments": {
       "typedRoutes": true,
