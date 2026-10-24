@@ -1,10 +1,12 @@
 import "../../global.css";
-import { LogBox } from "react-native"; LogBox.ignoreAllLogs(); // TEMP-SHOT
 
-import { ClerkProvider, useAuth } from "@clerk/expo";
+import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { SplashScreen, Stack } from "expo-router";
-import { useEffect } from "react";
+import { PostHogProvider, usePostHog } from "posthog-react-native";
+import { useEffect, useRef } from "react";
+
+import { posthog } from "@/config/posthog";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 
@@ -23,6 +25,38 @@ SplashScreen.preventAutoHideAsync();
 // redirects automatically, so screens never navigate after auth changes.
 // redirectTo matters: onboarding owns "/", so without it a signed-in guest
 // (cold start or right after sign in) lands on "/" with nothing to show.
+function PostHogIdentity() {
+  const posthog = usePostHog();
+  const { isLoaded, user } = useUser();
+  const identifiedUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (user) {
+      if (identifiedUserId.current === user.id) return;
+
+      const email = user.primaryEmailAddress?.emailAddress;
+      posthog.identify(user.id, {
+        $set: {
+          ...(email ? { email } : {}),
+          ...(user.firstName ? { first_name: user.firstName } : {}),
+          ...(user.lastName ? { last_name: user.lastName } : {}),
+        },
+      });
+      identifiedUserId.current = user.id;
+      return;
+    }
+
+    if (identifiedUserId.current) {
+      posthog.reset();
+      identifiedUserId.current = null;
+    }
+  }, [isLoaded, posthog, user]);
+
+  return null;
+}
+
 function RootStack() {
   const { isLoaded, isSignedIn } = useAuth();
 
@@ -47,9 +81,18 @@ function RootStack() {
 }
 
 export default function RootLayout() {
+  const content = <RootStack />;
+
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <RootStack />
+      {posthog ? (
+        <PostHogProvider client={posthog}>
+          <PostHogIdentity />
+          {content}
+        </PostHogProvider>
+      ) : (
+        content
+      )}
     </ClerkProvider>
   );
 }

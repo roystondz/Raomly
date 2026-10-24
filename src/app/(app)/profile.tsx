@@ -2,6 +2,7 @@ import { useClerk, useUser } from "@clerk/expo";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { View } from "react-native";
+import { usePostHog } from "posthog-react-native";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
@@ -9,9 +10,15 @@ import { Text } from "@/components/ui/text";
 // PLACEHOLDER: the real profile comes with its own design.
 export default function ProfileScreen() {
   const router = useRouter();
+  const posthog = usePostHog();
   const { user } = useUser();
   const { signOut } = useClerk();
   const email = user?.primaryEmailAddress?.emailAddress;
+
+  async function handleSignOut() {
+    posthog?.capture("user_signed_out");
+    await signOut();
+  }
 
   return (
     <View className="flex-1 justify-center gap-6 bg-surface px-6">
@@ -30,7 +37,7 @@ export default function ProfileScreen() {
       </View>
       <View className="gap-3">
         {/* The route guard returns to onboarding once the session ends. */}
-        <Button variant="secondary" title="Sign out" onPress={() => signOut()} />
+        <Button variant="secondary" title="Sign out" onPress={handleSignOut} />
         {__DEV__ ? (
           <Button
             size="sm"

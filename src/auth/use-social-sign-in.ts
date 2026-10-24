@@ -1,6 +1,7 @@
 import { useSSO } from "@clerk/expo";
 import { useState } from "react";
 import { Alert } from "react-native";
+import { usePostHog } from "posthog-react-native";
 
 import type { SocialProvider } from "@/components/auth/social-buttons";
 
@@ -8,6 +9,7 @@ import type { SocialProvider } from "@/components/auth/social-buttons";
 // SSO still returns setActive (it doesn't use finalize()); cancelling resolves
 // with no session and is not an error.
 export function useSocialSignIn() {
+  const posthog = usePostHog();
   const { startSSOFlow } = useSSO();
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export function useSocialSignIn() {
       const { createdSessionId, setActive, signUp } = await startSSOFlow({ strategy: "oauth_google" });
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
+        posthog?.capture("social_sign_in_completed", { sign_in_method: "google" });
         return; // The route guard takes over; this screen unmounts.
       }
       if (signUp?.status === "missing_requirements") {

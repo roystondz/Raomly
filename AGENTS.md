@@ -14,12 +14,16 @@ npx tsc --noEmit            # type check
 npx expo-doctor             # diagnose dependency and config issues
 npx expo install --fix      # fix incompatible package versions
 npx eas-cli@latest <cmd>    # EAS builds, submits, and updates (use instead of bare `eas`)
+cd studio && npm run seed   # idempotent seed (uses your Sanity CLI login, no token)
+cd studio && npm run write-copy [-- --slug x --dry-run | --self-test]  # Agent Actions copy
+cd studio && npx sanity schema deploy && npx sanity deploy  # after schema changes
 ~~~
 
 ## Expo
 
 - Expo ships breaking changes every SDK release, so don't trust memory. Before touching an Expo, EAS, or React Native API, check the `expo` major version in `package.json` and read `https://docs.expo.dev/versions/v<major>.0.0/`. For anything else, start from https://docs.expo.dev/llms.txt and follow its links.
 - Routes live in `src/app/`: every file is a screen and `_layout.tsx` files define navigators. API routes are `src/app/api/*+api.ts`. Keep components, hooks, and utils outside `src/app/`.
+- Published content is read straight from the Sanity CDN query API through `src/sanity/fetch.ts`, with values as `$params` and no token. Queries live in `src/sanity/queries.ts` and images go through `sanityImage()`. Automatic loads use the CDN, which can lag up to about a minute behind Studio. Pull to refresh passes `fresh: true` to read the live API. Home reloads quietly on focus and when the app returns to the foreground, at most every 15 seconds. Home is not real-time; that would need the Live Content API and new packages. Work that needs secrets, Jev or semantic search goes through API routes instead. Home is live, while Search still uses `src/data/stays.ts` until its API route exists.
 - Navigation: the root Stack hides headers and screens opt in. The root layout holds the splash until Clerk `isLoaded`, then guards with `Stack.Protected`: signed out → `index` (onboarding) + `(auth)`, signed in → `(app)`. Each guard needs `redirectTo` (`/home` and `/`), because onboarding owns `/` and a signed-in guest would otherwise land on an unmatched route. Screens never navigate after an auth change; the guard redirects.
 - `ios/` and `android/` are generated. Never create or edit them by hand; configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, switch to a development build (`npx expo run:ios`).
@@ -34,9 +38,16 @@ Each tool has one job. Ask before moving a responsibility to a different tool.
   - Sign-up screens render `<View nativeID="clerk-captcha" />`.
   - Instance config changes go through `clerk config patch` with `--dry-run` first.
   - First/last name are enabled (optional); "Full name" is split in code (`src/auth/split-name.ts`).
-- **Content:** Sanity (properties, hosts, policies, house rules). Studio is a standalone app in `studio/`. Schema deploys and content changes go through the Sanity MCP, and generated property copy uses Agent Actions.
+- **Content:** Sanity, project `o5jn9krf`, dataset `production`, Studio at https://roamly.sanity.studio. Schema lives in `studio/schemaTypes/` and deploys from `studio/` with the local CLI. Never use the MCP's `deploy_schema`/`deploy_studio`, which are only for MCP-managed schemas. Content changes, dataset settings and checks go through the Sanity MCP.
+  - `property` holds typed filter fields (`propertyType`, `pricePerNight`, `maxGuests`, `bedrooms`, `bathrooms`, `amenities`, `houseRules.petsAllowed`, `location.city`/`region`) and the ranking text (`summary`, `description`, `highlights`). House rules and rooms are embedded objects on it.
+  - `host` and `policy` are shared documents. A stay references one cancellation policy. Every other policy category applies to all stays.
+  - Fixed value lists (amenities, types, beds, policy categories) live in `studio/schemaTypes/constants.ts`. Amenity keys match the app's search code, so rename them only together.
+  - Beds are counted from `rooms[].beds[].count` in GROQ, never stored. Policy `body` is plain text shown verbatim.
+  - The seed (`studio/scripts/seed.ts`) finds documents by `slug.current` and photos by `source.id` (Unsplash). Running it restores seeded facts, prices and photos that were edited in Studio, but fills copy (`summary`, `description`, `highlights`) only when it's missing.
+  - Property copy is written by `npm run write-copy` (Agent Actions `generate`, schema `_.schemas.default`, API `vX`) from the stay's typed fields only. Price, rating and host are excluded, and the title is a name, not a fact.
+  - Copy is published only after it passes both `scripts/copy/checks.ts` (code) and an Agent Actions `prompt` fact-check. After 3 failed tries it stays a Studio draft. When a check misfires, fix the check, never loosen the facts rule.
 - **Exact constraints** (price, guests, type, amenities, pets, place): GROQ filters, with values always passed as params.
-- **Soft intent** (quiet, cozy, secluded): Dataset Embeddings via `text::semanticSimilarity()` inside `score()`.
+- **Soft intent** (quiet, cozy, secluded): Dataset Embeddings via `text::semanticSimilarity()` inside `score()`. The embeddings projection covers `property` only: `{_type=="property"=>{title,propertyType,location{city,region},summary,description,highlights}}`. Update it (`datasets embeddings enable … --projection`) when those fields change.
 - **Policy knowledge:** a Sanity Context endpoint in Knowledge Base mode. Context endpoints are created in the Dashboard's Context app and read with an organization token (Context Viewer), per https://www.sanity.io/docs/ai/context-migration-guide. One endpoint serves one mode. The Context skill still describes `sanity.agentContext` Studio documents with a project token; that route is deprecated, so don't use it.
 - **Typed decisions** (which stay topics and policies answer a question): Jev, called from API routes through the AI SDK's `experimental_evaluate` with the `@ai-sdk/typesafe-ai` provider and `TYPESAFE_AI_API_KEY`. No Vercel AI Gateway. Keep `ai` and `@ai-sdk/typesafe-ai` pinned to exact versions, since the API is experimental.
 - **Answer text:** none generated. Answers show the stay's own fields and policy text word for word, with their source. No LLM runs in the app.
@@ -90,6 +101,7 @@ Designs are attached in the chat. Screens must match them exactly: layout, spaci
 - Shared components are in `src/components/ui/`. Screens use `Text` variants, never font or size classes. Don't pass two classes for the same property (e.g. a font class over a variant); add a variant instead.
 - Text and icons over photos follow the photo's tone: `ink` on light tops, `on-ink` on dark. Glass over photos uses `useGlassAvailable` (`src/hooks/`) with `scrim`/`surface-glass` fallbacks.
 - Light mode only for now.
+- Home has no search button beside the heading (removed by request, a deliberate difference from the design). Search is reached through the prompt pill or the Search tab.
 - `/design-system` is the dev-only gallery of every component, for comparing against designs.
 
 ## Reporting

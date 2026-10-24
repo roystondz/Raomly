@@ -1,25 +1,37 @@
 import { Image } from "expo-image";
 import { ChevronRight, MapPin, Star } from "lucide-react-native";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
-import type { Stay } from "@/data/stays";
+import { sanityImage } from "@/sanity/image";
+import type { HomeStay } from "@/sanity/queries";
 import { colors } from "@/theme";
+
+// Matches h-67 and the screen's px-5 gutters, for sizing the CDN image.
+const CARD_HEIGHT = 268;
+const SCREEN_GUTTERS = 40;
 
 // Darkens the lower part of the photo so on-ink text reads on any image.
 const bottomScrim = { backgroundImage: `linear-gradient(to bottom, transparent 35%, ${colors.scrim})` };
 
 // Large photo card from the home design. Not pressable yet: there is no stay
 // detail screen, so the chevron is decorative.
-export function FeaturedStayCard({ stay }: { stay: Stay }) {
+export function FeaturedStayCard({ stay }: { stay: Pick<HomeStay, "title" | "location" | "rating" | "imageUrl" | "imageAlt"> }) {
+  const { width } = useWindowDimensions();
   return (
     <View
       accessible
       accessibilityLabel={`${stay.title}, ${stay.location}, rated ${stay.rating.toFixed(1)}`}
       className="h-67 overflow-hidden rounded-2xl corner-squircle bg-surface-muted"
     >
-      <Image source={{ uri: stay.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+      <Image
+        source={{ uri: sanityImage(stay.imageUrl, width - SCREEN_GUTTERS, CARD_HEIGHT) }}
+        alt={stay.imageAlt}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        transition={200}
+      />
       <View style={[StyleSheet.absoluteFill, bottomScrim]} />
 
       <View className="absolute right-4 top-4 h-11 flex-row items-center gap-1.5 rounded-full bg-surface px-4">

@@ -3,6 +3,7 @@ import { SearchX, Sparkles } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import Animated, { Easing, FadeIn, FadeInDown, useReducedMotion } from "react-native-reanimated";
+import { usePostHog } from "posthog-react-native";
 import type { SearchBarCommands } from "react-native-screens";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ const EXAMPLES = [
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
 export default function SearchScreen() {
+  const posthog = usePostHog();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const searchBar = useRef<SearchBarCommands>(null);
   const [query, setQuery] = useState("");
@@ -31,9 +33,16 @@ export default function SearchScreen() {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [lastQ, setLastQ] = useState<string | undefined>(undefined);
 
-  const run = (text: string) => {
-    setQuery(text.trim());
+  const run = (text: string, source?: "native_search" | "suggested_query") => {
+    const trimmedQuery = text.trim();
+    setQuery(trimmedQuery);
     setRunId((id) => id + 1);
+    if (trimmedQuery && source) {
+      posthog?.capture("stay_search_submitted", {
+        search_source: source,
+        query_length: trimmedQuery.length,
+      });
+    }
   };
 
   // A query from Home arrives as ?q=: search it during render (no effect
@@ -48,13 +57,16 @@ export default function SearchScreen() {
 
   const result = useMemo(() => (query ? searchStays(query, stays) : null), [query]);
 
-  const toggleSave = (id: string) =>
+  const toggleSave = (id: string) => {
+    const isSaved = saved.has(id);
     setSaved((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
+      if (isSaved) next.delete(id);
       else next.add(id);
       return next;
     });
+    posthog?.capture(isSaved ? "stay_unsaved" : "stay_saved", { stay_id: id });
+  };
 
   return (
     <>
@@ -63,7 +75,7 @@ export default function SearchScreen() {
         placeholder="Describe your stay"
         autoCapitalize="none"
         hideWhenScrolling={false}
-        onSearchButtonPress={(event) => run(event.nativeEvent.text)}
+        onSearchButtonPress={(event) => run(event.nativeEvent.text, "native_search")}
         onCancelButtonPress={() => run("")}
       />
       <ScrollView
@@ -77,7 +89,7 @@ export default function SearchScreen() {
           <EmptyQuery
             onPick={(example) => {
               searchBar.current?.setText(example);
-              run(example);
+              run(example, "suggested_query");
             }}
           />
         ) : (

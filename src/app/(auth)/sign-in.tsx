@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ArrowRight, Mail } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { View, type TextInputInstance } from "react-native";
+import { usePostHog } from "posthog-react-native";
 
 import { fieldError, globalError } from "@/auth/clerk-errors";
 import { navigateAfterAuth } from "@/auth/finalize";
@@ -19,6 +20,7 @@ import { TextField } from "@/components/ui/text-field";
 
 export default function SignInScreen() {
   const router = useRouter();
+  const posthog = usePostHog();
   const { signIn, errors, fetchStatus } = useSignIn();
   const social = useSocialSignIn();
   const [email, setEmail] = useState("");
@@ -46,6 +48,7 @@ export default function SignInScreen() {
 
     if (signIn.status === "complete") {
       await signIn.finalize({ navigate: navigateAfterAuth });
+      posthog?.capture("user_signed_in", { sign_in_method: "email_password" });
       return;
     }
 

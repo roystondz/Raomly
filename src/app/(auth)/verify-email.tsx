@@ -1,6 +1,7 @@
 import { useSignIn, useSignUp } from "@clerk/expo";
 import { Redirect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { usePostHog } from "posthog-react-native";
 
 import { fieldError, globalError } from "@/auth/clerk-errors";
 import { navigateAfterAuth } from "@/auth/finalize";
@@ -19,6 +20,7 @@ const RESEND_COOLDOWN_S = 30;
 //   flow=sign-in  -> new-device / second-factor email code
 export default function VerifyEmailScreen() {
   const { flow } = useLocalSearchParams<{ flow?: "sign-up" | "sign-in" }>();
+  const posthog = usePostHog();
   const isSignUp = flow !== "sign-in";
   const signUpState = useSignUp();
   const signInState = useSignIn();
@@ -57,13 +59,17 @@ export default function VerifyEmailScreen() {
     if (isSignUp) {
       const { error } = await signUp.verifications.verifyEmailCode({ code: value });
       if (error) return;
-      if (signUp.status === "complete") await signUp.finalize({ navigate: navigateAfterAuth });
-      else setLocalError("Your account needs more details to finish signing up.");
+      if (signUp.status === "complete") {
+        await signUp.finalize({ navigate: navigateAfterAuth });
+        posthog?.capture("account_created", { sign_up_method: "email_password" });
+      } else setLocalError("Your account needs more details to finish signing up.");
     } else {
       const { error } = await signIn.mfa.verifyEmailCode({ code: value });
       if (error) return;
-      if (signIn.status === "complete") await signIn.finalize({ navigate: navigateAfterAuth });
-      else setLocalError("This account needs another verification step this app doesn't support yet.");
+      if (signIn.status === "complete") {
+        await signIn.finalize({ navigate: navigateAfterAuth });
+        posthog?.capture("user_signed_in", { sign_in_method: "email_code" });
+      } else setLocalError("This account needs another verification step this app doesn't support yet.");
     }
   }
 
