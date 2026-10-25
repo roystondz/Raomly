@@ -1,0 +1,38 @@
+# Demo stage 2: sign up a new guest from onboarding.
+# Clerk development instances accept code 424242 for +clerk_test emails,
+# so no inbox is needed. Pass a unique EMAIL each run:
+#   maestro test -e EMAIL=roamly+clerk_test_demo$(date +%s)@example.com .maestro/02-sign-up.yaml
+# The password is typed with "Show password" on: in the Simulator, iOS AutoFill's
+# strong-password mode otherwise swallows typed text in a newPassword field.
+appId: com.anonymous.roamly
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Get started"
+    timeout: 30000
+- tapOn: "Get started"
+- extendedWaitUntil:
+    visible: "Create account"
+    timeout: 10000
+- takeScreenshot: 02-sign-up-empty
+- tapOn: "e.g. Royston Dsouza"
+- inputText: "Demo Guest"
+- tapOn: "you@example.com"
+- inputText: ${EMAIL}
+- tapOn: "Show password"
+- tapOn: "At least 8 characters"
+- inputText: "Roamly-Demo-2026!"
+- hideKeyboard
+- takeScreenshot: 02-sign-up-filled
+- tapOn: "Create account"
+- extendedWaitUntil:
+    visible: "Verify"
+    timeout: 20000
+- takeScreenshot: 02-verify
+# The code field is a hidden, auto-focused input under the six boxes; the
+# sixth digit submits it, so there's no Verify tap.
+- inputText: "424242"
+- extendedWaitUntil:
+    visible: "Find your next stay"
+    timeout: 30000
+- takeScreenshot: 02-home-after-sign-up

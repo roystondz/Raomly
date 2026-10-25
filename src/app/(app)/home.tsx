@@ -21,7 +21,7 @@ import { Icon } from "@/components/ui/icon";
 import { Logo } from "@/components/ui/logo";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { Text } from "@/components/ui/text";
-import type { StayType } from "@/data/stays";
+import type { StayType } from "@/search/types";
 import { useHomeStays } from "@/hooks/use-home-stays";
 import { colors } from "@/theme";
 
@@ -97,14 +97,15 @@ export default function HomeScreen() {
         Find your next stay
       </Text>
 
-      <View className="mt-6 h-15 flex-row items-center gap-2.5 rounded-full bg-lavender pl-4 pr-1.5">
-        <Icon icon={Sparkles} size={22} />
+      {/* Editorial input: an underlined line, not a filled pill. */}
+      <View className="mt-6 h-15 flex-row items-center gap-3 border-b-2 border-ink">
+        <Icon icon={Sparkles} size={22} color="accent-600" />
         <TextInput
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={submit}
           placeholder={EXAMPLE_QUERY}
-          placeholderTextColor={colors.ink}
+          placeholderTextColor={colors.muted}
           accessibilityLabel="Describe your stay"
           returnKeyType="search"
           submitBehavior="blurAndSubmit"
@@ -115,9 +116,9 @@ export default function HomeScreen() {
           accessibilityLabel="Search stays"
           onPress={submit}
           hitSlop={4}
-          className="size-12 items-center justify-center rounded-full bg-surface"
+          className="size-11 items-center justify-center rounded-full bg-ink"
         >
-          <Icon icon={ArrowUpRight} size={24} />
+          <Icon icon={ArrowUpRight} size={22} color="on-ink" />
         </PressableScale>
       </View>
 
@@ -126,8 +127,6 @@ export default function HomeScreen() {
           <Chip
             key={c.label}
             size="compact"
-            tone="primary"
-            appearance="muted"
             icon={c.icon}
             label={c.label}
             selected={category === c.type}
@@ -141,8 +140,9 @@ export default function HomeScreen() {
 
       {loading ? (
         <View className="mt-6 gap-5" accessibilityLabel="Loading stays">
-          <View className="h-67 rounded-2xl corner-squircle bg-surface-muted" />
-          <View className="h-67 rounded-2xl corner-squircle bg-surface-muted" />
+          <View className="h-64 rounded-lg bg-surface-muted" />
+          <View className="h-6 w-3/5 rounded-sm bg-surface-muted" />
+          <View className="h-64 rounded-lg bg-surface-muted" />
         </View>
       ) : error && !stays ? (
         <View className="mt-10 items-center gap-3">
@@ -161,7 +161,10 @@ export default function HomeScreen() {
           <View className="mt-6 gap-5">
             {visibleStays?.map((stay) => (
               <Animated.View key={stay.id} entering={CARD_ENTER} exiting={CARD_EXIT} layout={CARD_LAYOUT}>
-                <FeaturedStayCard stay={stay} />
+                <FeaturedStayCard
+                  stay={stay}
+                  onPress={() => router.push({ pathname: "/stay/[slug]", params: { slug: stay.slug, from: "home" } })}
+                />
               </Animated.View>
             ))}
           </View>

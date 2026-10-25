@@ -1,0 +1,53 @@
+# Demo stage 6: Trips, Profile and its sheets, then sign out.
+appId: com.anonymous.roamly
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Find your next stay"
+    timeout: 30000
+- tapOn: "Trips"
+- extendedWaitUntil:
+    visible: "No trips yet"
+    timeout: 5000
+- takeScreenshot: 06-trips
+- tapOn: "Profile"
+- extendedWaitUntil:
+    visible: "Demo Guest"
+    timeout: 10000
+- takeScreenshot: 06-profile
+- tapOn: "Personal info"
+- extendedWaitUntil:
+    visible: "Member since"
+    timeout: 10000
+- takeScreenshot: 06-personal-info
+- swipe:
+    start: 50%, 70%
+    end: 50%, 98%
+- waitForAnimationToEnd
+- tapOn: "Payment methods"
+- extendedWaitUntil:
+    visible: "Coming soon"
+    timeout: 10000
+- takeScreenshot: 06-coming-soon
+- tapOn: "OK"
+- scrollUntilVisible:
+    element: "Roamly policies.*"
+    direction: DOWN
+- tapOn: "Roamly policies.*"
+- extendedWaitUntil:
+    visible: "Flexible cancellation"
+    timeout: 10000
+- takeScreenshot: 06-policies-sheet
+- swipe:
+    start: 50%, 40%
+    end: 50%, 98%
+- waitForAnimationToEnd
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Sign out"
+    timeout: 10000
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Get started"
+    timeout: 15000
+- takeScreenshot: 06-signed-out

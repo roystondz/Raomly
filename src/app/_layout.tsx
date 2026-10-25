@@ -1,12 +1,14 @@
 import "../../global.css";
 
 import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
-import { tokenCache } from "@clerk/expo/token-cache";
 import { SplashScreen, Stack } from "expo-router";
+import { LogBox } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 import { useEffect, useRef } from "react";
 
+import { tokenCache } from "@/auth/token-cache";
 import { posthog } from "@/config/posthog";
+import { sheetOptions } from "@/config/sheet-options";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 
@@ -15,6 +17,10 @@ if (!publishableKey) {
     "Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY. Add your key to .env.local.\nRun: 1) clerk auth login  2) clerk link  3) clerk env pull — then restart the dev server.",
   );
 }
+
+// Clerk logs a notice whenever development keys are used. It's expected in dev,
+// and its toast covers bottom-of-screen buttons, so only that message is hidden.
+LogBox.ignoreLogs(["Clerk has been loaded with development keys"]);
 
 // Keep the splash up until Clerk has restored the session from the token cache,
 // so signed-in guests don't see onboarding flash on a cold start.
@@ -74,6 +80,12 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={!!isSignedIn} redirectTo="/">
         <Stack.Screen name="(app)" />
+        {/* Pushed over the tabs, so the tab bar is hidden as in the design. */}
+        <Stack.Screen name="stay/[slug]" />
+        {/* Profile sheets. */}
+        <Stack.Screen name="settings" options={{ ...sheetOptions, sheetAllowedDetents: "fitToContents" }} />
+        <Stack.Screen name="personal-info" options={{ ...sheetOptions, sheetAllowedDetents: "fitToContents" }} />
+        <Stack.Screen name="policies" options={{ ...sheetOptions, sheetAllowedDetents: [0.6, 1] }} />
       </Stack.Protected>
       <Stack.Screen name="design-system" />
     </Stack>
@@ -81,18 +93,12 @@ function RootStack() {
 }
 
 export default function RootLayout() {
-  const content = <RootStack />;
-
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      {posthog ? (
-        <PostHogProvider client={posthog}>
-          <PostHogIdentity />
-          {content}
-        </PostHogProvider>
-      ) : (
-        content
-      )}
+      <PostHogProvider client={posthog}>
+        <PostHogIdentity />
+        <RootStack />
+      </PostHogProvider>
     </ClerkProvider>
   );
 }

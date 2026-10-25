@@ -20,15 +20,10 @@ const ATTEMPTS = 3
 const posthogProjectToken = process.env.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN
 const posthogHost = process.env.EXPO_PUBLIC_POSTHOG_HOST
 
-if (!posthogProjectToken && process.env.NODE_ENV !== 'production') {
-  throw new Error(
-    'EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN is configured',
-  )
-}
-
-if (!posthogHost && process.env.NODE_ENV !== 'production') {
-  throw new Error(
-    'EXPO_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once EXPO_PUBLIC_POSTHOG_HOST is configured',
+// PostHog is optional: without its variables the script runs and records nothing.
+if (!posthogProjectToken || !posthogHost) {
+  console.warn(
+    'PostHog is off: set EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN and EXPO_PUBLIC_POSTHOG_HOST to record copy generations.',
   )
 }
 
@@ -101,7 +96,7 @@ async function generate(stay: StayRow, feedback: string[], traceId: string): Pro
   const instructionParams = {
     facts: constant(toFacts(stay)),
     feedback: {
-      type: 'constant',
+      type: 'constant' as const,
       value: feedback.length
         ? `A previous draft was rejected for these reasons. Fix every one:\n- ${feedback.join('\n- ')}`
         : ' ',

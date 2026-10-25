@@ -1,6 +1,6 @@
 # Roamly
 
-Expo React Native rental app. Guests describe a stay in one sentence ("quiet pet friendly cabin with a hot tub under $300 a night") and get ranked stays back. They can also ask booking and policy questions about a stay, answered with exact text from Roam's own content.
+Expo React Native rental app. Guests describe a stay in one sentence ("quiet pet friendly cabin with a hot tub under $300 a night") and get ranked stays back. They can also ask booking and policy questions about a stay, answered with exact text from Roamly's own content.
 
 This file is the project's memory: it holds every decision that is still true. Plans in `prompts/` are history.
 
@@ -17,15 +17,16 @@ npx eas-cli@latest <cmd>    # EAS builds, submits, and updates (use instead of b
 cd studio && npm run seed   # idempotent seed (uses your Sanity CLI login, no token)
 cd studio && npm run write-copy [-- --slug x --dry-run | --self-test]  # Agent Actions copy
 cd studio && npx sanity schema deploy && npx sanity deploy  # after schema changes
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 ~/.maestro/bin/maestro test .maestro/0N-*.yaml  # end-to-end demo flows (run in order; 02 needs -e EMAIL=roamly+clerk_test_<unique>@example.com)
 ~~~
 
 ## Expo
 
 - Expo ships breaking changes every SDK release, so don't trust memory. Before touching an Expo, EAS, or React Native API, check the `expo` major version in `package.json` and read `https://docs.expo.dev/versions/v<major>.0.0/`. For anything else, start from https://docs.expo.dev/llms.txt and follow its links.
 - Routes live in `src/app/`: every file is a screen and `_layout.tsx` files define navigators. API routes are `src/app/api/*+api.ts`. Keep components, hooks, and utils outside `src/app/`.
-- Published content is read straight from the Sanity CDN query API through `src/sanity/fetch.ts`, with values as `$params` and no token. Queries live in `src/sanity/queries.ts` and images go through `sanityImage()`. Automatic loads use the CDN, which can lag up to about a minute behind Studio. Pull to refresh passes `fresh: true` to read the live API. Home reloads quietly on focus and when the app returns to the foreground, at most every 15 seconds. Home is not real-time; that would need the Live Content API and new packages. Work that needs secrets, Jev or semantic search goes through API routes instead. Home is live, while Search still uses `src/data/stays.ts` until its API route exists.
-- Navigation: the root Stack hides headers and screens opt in. The root layout holds the splash until Clerk `isLoaded`, then guards with `Stack.Protected`: signed out → `index` (onboarding) + `(auth)`, signed in → `(app)`. Each guard needs `redirectTo` (`/home` and `/`), because onboarding owns `/` and a signed-in guest would otherwise land on an unmatched route. Screens never navigate after an auth change; the guard redirects.
-- `ios/` and `android/` are generated. Never create or edit them by hand; configure native behavior in `app.json` and config plugins.
+- Published content is read straight from the Sanity CDN query API through `src/sanity/fetch.ts`, with values as `$params` and no token. Queries live in `src/sanity/queries.ts` and images go through `sanityImage()`. Automatic loads use the CDN, which can lag up to about a minute behind Studio. Pull to refresh passes `fresh: true` to read the live API. Home reloads quietly on focus and when the app returns to the foreground, at most every 15 seconds. Home is not real-time; that would need the Live Content API and new packages. Work that needs secrets or Jev goes through API routes. Search also runs in the app: code parses the sentence (`src/search/parse-query.ts`), and `src/search/build-query.ts` turns it into GROQ filters plus `text::semanticSimilarity()` ranking on the public CDN. Search takes its sentence as the `q` param.
+- Navigation: the root Stack hides headers and screens opt in. The root layout holds the splash until Clerk `isLoaded`, then guards with `Stack.Protected`: signed out → `index` (onboarding) + `(auth)`, signed in → `(app)`. Each guard needs `redirectTo` (`/home` and `/`), because onboarding owns `/` and a signed-in guest would otherwise land on an unmatched route. Screens never navigate after an auth change; the guard redirects. Stay details are `/stay/[slug]` in the root Stack (signed-in guard, so it covers the tabs), with an `ask` chat screen ("Ask about policies" opens it) and `policies`, `cancellation` and `host` form sheets. Entry points pass `from` (`home` | `search`); no `from` means a link. Loaded stays are cached per session in `src/hooks/use-stay.ts`, which the sheets share. Profile opens root `settings` (Sign out lives here), `personal-info` and `policies` (every Roamly policy, word for word) form sheets; all sheets share `src/config/sheet-options.ts`.
+- `ios/` and `android/` are generated. Never create or edit them by hand; configure native behavior in `app.json` and config plugins. After changing `app.json` plugins (for example adding a font), run `npx expo prebuild --platform ios` before `npx expo run:ios`; `run:ios` alone reuses the old `ios/`.
 - Expo Go only includes its bundled native modules. After adding a library with native code, switch to a development build (`npx expo run:ios`).
 
 ## Who owns what
@@ -34,24 +35,24 @@ Each tool has one job. Ask before moving a responsibility to a different tool.
 
 - **Auth:** Clerk is the source of truth. The app keeps its own custom auth screens. Set Clerk up through the Clerk CLI and use the Clerk MCP (or the installed Clerk skills) for current Expo patterns.
   - Custom flows use `@clerk/expo` method-based hooks: `signUp.password`, `signUp.verifications.*`, `signIn.password`, `signIn.mfa.*`, `finalize`. Never the legacy `setActive`/`prepareFirstFactor` flow; only `useSSO` (Google) uses `setActive`.
-  - Sessions persist with `tokenCache` (`@clerk/expo/token-cache`).
+  - Sessions persist with `src/auth/token-cache.ts` (expo-secure-store). It replaces `@clerk/expo/token-cache`, which deletes the client token on any Android read error; losing it between sending and entering an email code makes Clerk answer `signed_out` ("You are signed out"). The verify screen treats `signed_out` as a timed-out attempt and offers "Start again".
   - Sign-up screens render `<View nativeID="clerk-captcha" />`.
   - Instance config changes go through `clerk config patch` with `--dry-run` first.
   - First/last name are enabled (optional); "Full name" is split in code (`src/auth/split-name.ts`).
 - **Content:** Sanity, project `o5jn9krf`, dataset `production`, Studio at https://roamly.sanity.studio. Schema lives in `studio/schemaTypes/` and deploys from `studio/` with the local CLI. Never use the MCP's `deploy_schema`/`deploy_studio`, which are only for MCP-managed schemas. Content changes, dataset settings and checks go through the Sanity MCP.
   - `property` holds typed filter fields (`propertyType`, `pricePerNight`, `maxGuests`, `bedrooms`, `bathrooms`, `amenities`, `houseRules.petsAllowed`, `location.city`/`region`) and the ranking text (`summary`, `description`, `highlights`). House rules and rooms are embedded objects on it.
   - `host` and `policy` are shared documents. A stay references one cancellation policy. Every other policy category applies to all stays.
-  - Fixed value lists (amenities, types, beds, policy categories) live in `studio/schemaTypes/constants.ts`. Amenity keys match the app's search code, so rename them only together.
+  - Fixed value lists (amenities, types, beds, policy categories) live in `studio/schemaTypes/constants.ts`. Amenity keys match the app's search code (`src/search/types.ts`, with labels and icons in `src/search/amenities.ts`), so rename them only together.
   - Beds are counted from `rooms[].beds[].count` in GROQ, never stored. Policy `body` is plain text shown verbatim.
   - The seed (`studio/scripts/seed.ts`) finds documents by `slug.current` and photos by `source.id` (Unsplash). Running it restores seeded facts, prices and photos that were edited in Studio, but fills copy (`summary`, `description`, `highlights`) only when it's missing.
   - Property copy is written by `npm run write-copy` (Agent Actions `generate`, schema `_.schemas.default`, API `vX`) from the stay's typed fields only. Price, rating and host are excluded, and the title is a name, not a fact.
   - Copy is published only after it passes both `scripts/copy/checks.ts` (code) and an Agent Actions `prompt` fact-check. After 3 failed tries it stays a Studio draft. When a check misfires, fix the check, never loosen the facts rule.
-- **Exact constraints** (price, guests, type, amenities, pets, place): GROQ filters, with values always passed as params.
+- **Exact constraints** (price, guests, type, amenities, pets, place): GROQ filters, with values always passed as params. Every recognised place filters: data cities, US states, and countries plus major world cities (`src/search/places.ts`, on `location.country`), so a place with no stays returns nothing. Embedding scores can't separate unrelated words ("igloo on the moon") from related ones ("secluded"), so a search with only soft words shows a no-exact-match screen and counts as `has_results: false`. The nearest stays appear, labelled "Closest matches", only after the guest taps "Show closest stays anyway" (`stay_search_closest_shown`). A Jev relevance check is the planned real fix.
 - **Soft intent** (quiet, cozy, secluded): Dataset Embeddings via `text::semanticSimilarity()` inside `score()`. The embeddings projection covers `property` only: `{_type=="property"=>{title,propertyType,location{city,region},summary,description,highlights}}`. Update it (`datasets embeddings enable … --projection`) when those fields change.
 - **Policy knowledge:** a Sanity Context endpoint in Knowledge Base mode. Context endpoints are created in the Dashboard's Context app and read with an organization token (Context Viewer), per https://www.sanity.io/docs/ai/context-migration-guide. One endpoint serves one mode. The Context skill still describes `sanity.agentContext` Studio documents with a project token; that route is deprecated, so don't use it.
-- **Typed decisions** (which stay topics and policies answer a question): Jev, called from API routes through the AI SDK's `experimental_evaluate` with the `@ai-sdk/typesafe-ai` provider and `TYPESAFE_AI_API_KEY`. No Vercel AI Gateway. Keep `ai` and `@ai-sdk/typesafe-ai` pinned to exact versions, since the API is experimental.
+- **Typed decisions** (which stay topics and policies answer a question): Jev, called from API routes through the AI SDK's `experimental_evaluate` with the `@ai-sdk/typesafe-ai` provider and `TYPESAFE_AI_API_KEY`. No Vercel AI Gateway. Keep `ai` and `@ai-sdk/typesafe-ai` pinned to exact versions, since the API is experimental. Until Jev is wired, `src/ask/match-topics.ts` picks topics locally and `src/ask/answers.ts` builds one answer card per topic from the stay's fields and policy bodies, word for word, with a source label; replace both, don't extend them.
 - **Answer text:** none generated. Answers show the stay's own fields and policy text word for word, with their source. No LLM runs in the app.
-- **Analytics:** PostHog, identified through Clerk.
+- **Analytics:** PostHog, identified through Clerk. Search outcomes are `stay_search_completed` (`has_results`, `result_count`, filter flags; never text or place) and `stay_search_failed`, sent only from `src/config/search-analytics.ts`. The insight "Searches with and without results" charts them. Stay events are `stay_opened` (`stay_id`, `stay_type`, `price_per_night`, `source`), `stay_open_failed`, `stay_book_tapped` and `stay_question_asked` (`source` chip/typed, `topics`, `topic_count`, `answered`; never the text), sent only from `src/config/stay-analytics.ts`. `stay_saved`/`stay_unsaved` carry `source` and come from `src/hooks/use-saved-stays.ts`, the shared (not yet persisted) saved store.
 
 ## Rules
 
@@ -60,7 +61,7 @@ Each tool has one job. Ask before moving a responsibility to a different tool.
 - Jev is not an agent. It answers typed questions (Choice, Noul, Score) with probabilities. It never writes GROQ, calls tools, or generates text. Code builds queries from its answers.
 - Prices, guest counts, and dates are parsed in code. Jev may choose between candidates code found, but never produces the value.
 - Embeddings rank, they don't filter, and they only see the document itself (no references). Hard constraints are always GROQ filters, and text that should affect ranking lives on the property document.
-- Policy answers show only text from the stay's data and Roam's policies, word for word. If nothing answers the question, say so and point to support.
+- Policy answers show only text from the stay's data and Roamly's policies, word for word. If nothing answers the question, say so and point to support. Until the Q&A exists, "Ask about policies" opens a sheet with the stay's house rules (from typed fields, `additionalRules` verbatim) and every policy `body` verbatim. There is no superhost field and no booking dates: the host line shows `hostingSince`/`responseTime`, and the price bar shows the minimum-stay total.
 - API routes verify the Clerk session before doing any work.
 - PostHog failures never block the app. Never send what guests type, tokens, or personal data in events.
 - Let Sanity generate document IDs. Model relationships as references.
@@ -83,7 +84,7 @@ For a new feature or a change across several files. Small fixes and questions sk
 
 ## Building from designs
 
-Designs are attached in the chat. Screens must match them exactly: layout, spacing, sizes, colors, type, radii, icons, and copy.
+The app follows its own editorial direction (plan 13 and the `/design-system` gallery), not the original reference images. New screens use that language. When a design is attached in chat for a new screen, match it exactly (layout, spacing, sizes, type, icons, copy) but map it to the editorial tokens and components.
 
 - Icons, fonts, and brand images come from `assets/` or the chosen icon library, never recreated from a screenshot. Sample property photos may be remote placeholder images. If an asset is missing, use a marked placeholder and list it.
 - Map every color, font, spacing value, and radius to a design-system token. List values with no token in the plan as proposed new tokens instead of hardcoding them. When creating the design system itself, derive the tokens from the designs.
@@ -92,16 +93,19 @@ Designs are attached in the chat. Screens must match them exactly: layout, spaci
 
 ## Design system
 
-- Tokens live only in `global.css` `@theme`. `src/theme/colors.ts` mirrors colors only for color props (icons, Switch, placeholders, GlassView); keep the two in sync. No hex values elsewhere.
+- Tokens live only in `global.css` `@theme`. `src/theme/colors.ts` mirrors colors only for color props (icons, Switch, placeholders, GlassView); keep the two in sync. No hex values elsewhere. The palette is "Forest & sand": `primary` sand for main actions, the `accent` family (50/100/400/600, forest green) for chips, cards and links, and warm `surface-muted`/`line`. Recolor by changing token values, never screens.
 - Tailwind's default palette and type/radius/shadow scales are removed. Spacing is `--spacing: 4px` because native rem is 14.
 - `TextInput`s use `text-input` (font size, no line height). A line height makes iOS push typed text down and clip it while editing.
 - Line heights are unitless ratios (`--text-x--line-height: 1.5`). NativeWind multiplies them by font size, so px values make text hundreds of points tall.
 - Font is Plus Jakarta Sans, one family per weight (`font-sans`, `font-sans-medium`, `font-sans-bold`), embedded with the expo-font config plugin. It only shows in the dev build (`npx expo run:ios`), not Expo Go. Never use `font-bold`.
 - Icons are Lucide through `src/components/ui/icon.tsx`. The wordmark is `src/components/ui/logo.tsx` (source `assets/images/logo.svg`).
-- Shared components are in `src/components/ui/`. Screens use `Text` variants, never font or size classes. Don't pass two classes for the same property (e.g. a font class over a variant); add a variant instead.
+- Shared components are in `src/components/ui/`. Screens use `Text` variants, never font or size classes. Don't pass two classes for the same property (e.g. a font class over a variant); add a variant instead. Editorial language: serif `font-serif` (Fraunces) for `display` through `title-xs`, sans for everything else (large button labels use `button-lg`); square-ish radii; content separated by hairlines and `SectionLabel` (uppercase `eyebrow`), never filled grey panels; photos with text below them; `Chip` is an outlined tag, selected ink-filled; `PolicyCard` is a link row; `ListGroup`/`ListRow` are hairline rows with no card. Pressable state classes (`active:`) must be constant: toggle `opacity-40` or `bg-*` beside them, never swap `active:` in and out, or react-native-css re-mounts the component.
 - Text and icons over photos follow the photo's tone: `ink` on light tops, `on-ink` on dark. Glass over photos uses `useGlassAvailable` (`src/hooks/`) with `scrim`/`surface-glass` fallbacks.
 - Light mode only for now.
+- App icon and splash: the Fraunces "r" in sand (`primary`) on forest (`accent-600`). iOS uses the Icon Composer bundle `assets/expo.icon` (vector layer `roamly-r.svg`); Android uses the adaptive foreground/background/monochrome PNGs. Regenerate with `scripts/app-icon.swift`; native rebuild required.
+- The brand is "Roamly" everywhere guests see it: app copy, source labels and policy text (Sanity and `studio/scripts/seed-data/`). The design sheet's "roam" is the old name.
 - Home has no search button beside the heading (removed by request, a deliberate difference from the design). Search is reached through the prompt pill or the Search tab.
+- The Search header has no filter (sliders) icon until a filter plan, a deliberate difference from the design.
 - `/design-system` is the dev-only gallery of every component, for comparing against designs.
 
 ## Reporting

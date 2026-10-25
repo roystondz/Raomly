@@ -28,7 +28,9 @@ export function SegmentedControl<T extends string>({ options, value, onChange, c
             onPress={() => onChange(option.value)}
             className={cn(
               "flex-1 flex-row items-center justify-center gap-2 rounded-full",
-              selected ? "bg-ink" : "active:opacity-70",
+              // The pressed style stays on every segment so selecting one doesn't re-mount it.
+              "active:opacity-70",
+              selected && "bg-ink",
             )}
           >
             {option.icon ? <Icon icon={option.icon} size={20} color={selected ? "on-ink" : "ink"} /> : null}

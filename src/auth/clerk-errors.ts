@@ -15,3 +15,8 @@ export function globalError(errors: ClerkErrors) {
   const first = errors.global?.[0];
   return first ? (first.longMessage ?? first.message) : undefined;
 }
+
+// True when a request failed with this Clerk API error code (e.g. "signed_out").
+export function hasErrorCode(errors: ClerkErrors, code: string) {
+  return !!errors.global?.some((error) => error.isClerkAPIResponseError() && error.errors.some((e) => e.code === code));
+}

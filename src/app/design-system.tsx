@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { Redirect, Stack } from "expo-router";
 import {
   ArrowRight,
+  ArrowUp,
   Bath,
   Bookmark,
   Briefcase,
@@ -30,6 +31,9 @@ import {
 import { useState, type ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
+import { NO_ANSWER } from "@/ask/answers";
+import { AnswerCard } from "@/components/ask/answer-card";
+import { SearchResultCard, SearchResultSkeleton } from "@/components/search/search-result-card";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +46,7 @@ import { ListGroup, ListRow } from "@/components/ui/list-group";
 import { ListingCard } from "@/components/ui/listing-card";
 import { Logo } from "@/components/ui/logo";
 import { PolicyCard } from "@/components/ui/policy-card";
+import { SectionLabel } from "@/components/ui/section-label";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Stepper } from "@/components/ui/stepper";
 import { Text } from "@/components/ui/text";
@@ -53,8 +58,8 @@ import { Toggle } from "@/components/ui/toggle";
 const SAMPLE_PHOTO = "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=640&q=80";
 
 const swatches = [
-  { name: "Primary Yellow", token: "primary", className: "bg-primary" },
-  { name: "Lavender", token: "lavender", className: "bg-lavender" },
+  { name: "Primary Sand", token: "primary", className: "bg-primary" },
+  { name: "Accent Forest", token: "accent", className: "bg-accent" },
   { name: "Text Primary", token: "ink", className: "bg-ink" },
   { name: "Text Secondary", token: "muted", className: "bg-muted" },
   { name: "Surface White", token: "surface", className: "bg-surface border border-line" },
@@ -114,8 +119,11 @@ export default function DesignSystemScreen() {
         </Section>
 
         <Section title="03. Typography">
+          <Text variant="eyebrow" tone="muted">Eyebrow · section label</Text>
+          <SectionLabel label="What's here" />
           <Text variant="display">Find your next stay</Text>
           <Text variant="title">Modern Cabin with Hot Tub</Text>
+          <Text variant="title-xs">Modern Cabin with Hot Tub</Text>
           <Text variant="body" tone="muted">
             From mountain cabins to oceanfront villas, roam helps you find unforgettable stays for every kind of trip.
           </Text>
@@ -128,12 +136,22 @@ export default function DesignSystemScreen() {
           <Button variant="secondary" title="Continue with Google" leading={<GoogleMark />} />
           <Button title="Loading" loading />
           <Button title="Disabled" disabled />
+          <Button size="lg" title="Book this stay" />
+          <View className="flex-row gap-3 rounded-lg bg-ink p-3">
+            <IconButton variant="overlay-lg" icon={ChevronLeft} accessibilityLabel="Back" />
+            <IconButton variant="overlay-lg" icon={Share} accessibilityLabel="Share" />
+            <IconButton variant="overlay-lg" icon={Heart} accessibilityLabel="Save" />
+          </View>
           <View className="flex-row gap-4">
             <IconButton icon={Heart} accessibilityLabel="Save" />
             <IconButton icon={Share} accessibilityLabel="Share" />
             <IconButton icon={Search} accessibilityLabel="Search" />
             <IconButton icon={Bookmark} accessibilityLabel="Bookmark" />
             <IconButton variant="outline" icon={ChevronLeft} accessibilityLabel="Back" />
+          </View>
+          <View className="flex-row items-center gap-4">
+            <IconButton variant="filled-sm" icon={ChevronLeft} accessibilityLabel="Back" />
+            <IconButton variant="muted" icon={Heart} accessibilityLabel="Save" />
           </View>
         </Section>
 
@@ -152,6 +170,17 @@ export default function DesignSystemScreen() {
               <Chip key={label} label={label} selected={chip === label} onPress={() => setChip(label)} />
             ))}
           </View>
+          <View className="flex-row flex-wrap gap-2.5">
+            {["Cabins", "Under $300", "Pet Friendly", "Quiet"].map((label) => (
+              <Chip
+                key={label}
+                size="xs"
+                label={label}
+                selected={chip === label}
+                onPress={() => setChip(label)}
+              />
+            ))}
+          </View>
           <View className="flex-row flex-wrap gap-2">
             {[
               { label: "All Stays", icon: House },
@@ -163,7 +192,6 @@ export default function DesignSystemScreen() {
               <Chip
                 key={c.label}
                 size="sm"
-                tone="primary"
                 icon={c.icon}
                 label={c.label}
                 selected={category === c.label}
@@ -179,8 +207,6 @@ export default function DesignSystemScreen() {
             ].map((c) => (
               <Chip
                 key={c.label}
-                tone="primary"
-                appearance="muted"
                 icon={c.icon}
                 label={c.label}
                 selected={category === c.label}
@@ -209,6 +235,43 @@ export default function DesignSystemScreen() {
           />
         </Section>
 
+        <Section title="07b. Search result card">
+          <SearchResultCard
+            saved={saved}
+            onToggleSave={() => setSaved((s) => !s)}
+            highlight={["hot-tub"]}
+            stay={{
+              id: "sample",
+              slug: "sample",
+              title: "Modern Cabin with Hot Tub",
+              type: "cabin",
+              location: "Lake Arrowhead, CA",
+              imageUrl: SAMPLE_PHOTO,
+              imageAlt: "Cabin at dusk",
+              rating: 4.9,
+              reviewCount: 342,
+              pricePerNight: 289,
+              petsAllowed: true,
+              amenities: ["hot-tub", "fireplace"],
+            }}
+          />
+          <SearchResultSkeleton />
+        </Section>
+
+        <Section title="07c. Answer card">
+          <AnswerCard
+            answer={{
+              topic: "pets",
+              title: "Pets",
+              rules: [{ label: "Pets", value: "Allowed" }],
+              paragraphs: ["Up to two dogs, with a $50 pet fee per stay."],
+              source: "House rules",
+            }}
+          />
+          <AnswerCard answer={NO_ANSWER} />
+          <IconButton variant="primary-sm" icon={ArrowUp} accessibilityLabel="Send" />
+        </Section>
+
         <Section title="08. Policy card">
           <PolicyCard
             icon={MessageSquareMore}
@@ -220,6 +283,18 @@ export default function DesignSystemScreen() {
             title="Free cancellation"
             description="Full refund up to 7 days before check-in."
           />
+          <PolicyCard
+            size="lg"
+            icon={MessageSquareMore}
+            title="Ask about policies"
+            description="Cancellation, house rules, pets, check-in and more."
+          />
+          <PolicyCard
+            size="lg"
+            icon={FileText}
+            title="Free cancellation"
+            description="Full refund up to 7 days before check-in."
+          />
         </Section>
 
         <Section title="09. Profile row">
@@ -227,6 +302,11 @@ export default function DesignSystemScreen() {
             <ListRow icon={User} label="Personal info" />
             <ListRow icon={CreditCard} label="Payment methods" />
             <ListRow icon={Briefcase} label="Trips" />
+          </ListGroup>
+          <ListGroup className="border border-line">
+            <ListRow variant="lg" icon={User} label="Personal info" />
+            <ListRow variant="lg" icon={CreditCard} label="Payment methods" />
+            <ListRow variant="lg" icon={Briefcase} label="Trips" />
           </ListGroup>
         </Section>
 

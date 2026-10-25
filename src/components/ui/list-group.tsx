@@ -7,13 +7,14 @@ import { cn } from "@/utils/cn";
 import { Icon } from "./icon";
 import { Text } from "./text";
 
+// Rows sit on the page, separated by full-width hairlines (no card behind them).
 export function ListGroup({ children, className }: { children: ReactNode; className?: string }) {
   const rows = Children.toArray(children);
   return (
-    <View className={cn("overflow-hidden rounded-xl corner-squircle bg-surface", className)}>
+    <View className={className}>
       {rows.map((row, i) => (
         <Fragment key={i}>
-          {i > 0 ? <View className="ml-14 h-px bg-line" /> : null}
+          {i > 0 ? <View className="h-px bg-line" /> : null}
           {row}
         </Fragment>
       ))}
@@ -21,25 +22,33 @@ export function ListGroup({ children, className }: { children: ReactNode; classN
   );
 }
 
+const variants = {
+  plain: { container: "min-h-13 gap-4 py-3", icon: 22, label: "caption", chevron: 18 },
+  // Profile and settings lists.
+  lg: { container: "min-h-14 gap-4 py-3.5", icon: 22, label: "body", chevron: 20 },
+} as const;
+
 export type ListRowProps = Omit<PressableProps, "children" | "style"> & {
   icon: LucideIcon;
   label: string;
+  variant?: keyof typeof variants;
   className?: string;
 };
 
-export function ListRow({ icon, label, className, ...props }: ListRowProps) {
+export function ListRow({ icon, label, variant = "plain", className, ...props }: ListRowProps) {
+  const v = variants[variant];
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={cn("min-h-13 flex-row items-center gap-4 px-4 py-3 active:bg-surface-muted", className)}
+      className={cn("flex-row items-center active:opacity-70", v.container, className)}
       {...props}
     >
-      <Icon icon={icon} />
-      <Text variant="caption" className="flex-1">
+      <Icon icon={icon} size={v.icon} />
+      <Text variant={v.label} className="flex-1">
         {label}
       </Text>
-      <Icon icon={ChevronRight} size={18} />
+      <Icon icon={ChevronRight} size={v.chevron} color="muted" />
     </Pressable>
   );
 }

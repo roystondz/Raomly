@@ -3,7 +3,7 @@ import {defineField, defineType} from 'sanity'
 
 import {list, POLICY_CATEGORIES} from '../constants'
 
-// Roam's own policies. Cancellation policies are referenced by stays; every
+// Roamly's own policies. Cancellation policies are referenced by stays; every
 // other category applies to all stays. The body is shown word for word.
 export const policy = defineType({
   name: 'policy',

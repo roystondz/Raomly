@@ -1,0 +1,15 @@
+# Demo stage 1: from a signed-in app, sign out through Profile > Settings.
+appId: com.anonymous.roamly
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 30000
+- tapOn: "Profile"
+- tapOn: "Settings"
+- takeScreenshot: 01-settings
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Get started"
+    timeout: 15000
+- takeScreenshot: 01-onboarding

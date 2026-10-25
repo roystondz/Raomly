@@ -13,6 +13,8 @@ const variants = {
 
 const sizes = {
   md: { container: "h-14 px-6", text: "button" },
+  // ≈ Stay details booking bar.
+  lg: { container: "h-16 px-6", text: "button-lg" },
   sm: { container: "h-9 px-5", text: "caption" },
 } as const;
 
@@ -45,10 +47,13 @@ export function Button({
       accessibilityState={{ disabled: inactive, busy: !!loading }}
       disabled={inactive}
       className={cn(
-        "flex-row items-center justify-center gap-3 rounded-full",
+        "flex-row items-center justify-center gap-3 rounded-md",
         variants[variant],
         sizes[size].container,
-        disabled ? "opacity-40" : "active:opacity-85",
+        // Always keep the pressed style: adding or removing it later re-mounts the
+        // button (react-native-css). A disabled button can't be pressed anyway.
+        "active:opacity-85",
+        disabled && "opacity-40",
         className,
       )}
       {...props}

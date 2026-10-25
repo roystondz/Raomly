@@ -1,13 +1,22 @@
-import type { Amenity, StayType } from "@/data/stays";
+import { STATES, WORLD_PLACES } from "./places";
+import type { Amenity, StayType } from "./types";
 
-// Local stand-in for the search API: code parses the exact constraints, the
-// rest of the sentence is soft intent that only ranks.
+// Code parses the exact constraints (they become GROQ filters); the rest of the
+// sentence is soft intent that only ranks.
 export type ParsedQuery = {
   maxPrice?: number;
   guests?: number;
   pets: boolean;
   type?: StayType;
   amenities: Amenity[];
+  // State code (location.region), e.g. "CA".
+  region?: string;
+  // A city from the data, as stored on location.city.
+  city?: string;
+  // A country (location.country), from a country or a major world city in the
+  // query. `place` is what to call it on screen ("Japan", "Paris").
+  country?: string;
+  place?: string;
   softTerms: string[];
 };
 
@@ -31,7 +40,7 @@ const TYPE_WORDS: [RegExp, StayType][] = [
   [/\b(villas?|estates?|mansions?)\b/, "villa"],
 ];
 
-const AMENITY_WORDS: [RegExp, Amenity][] = [
+export const AMENITY_WORDS: [RegExp, Amenity][] = [
   [/\b(hot[\s-]?tubs?|jacuzzi|spa)\b/, "hot-tub"],
   [/\bpools?\b/, "pool"],
   [/\b(wifi|wi-fi|internet)\b/, "wifi"],
@@ -40,16 +49,24 @@ const AMENITY_WORDS: [RegExp, Amenity][] = [
   [/\bparking\b/, "parking"],
   [/\b(beach access|on the beach|beachfront)\b/, "beach-access"],
   [/\b(workspace|desk|work from|remote work)\b/, "workspace"],
+  [/\b(a\/c|ac|air[\s-]?con(?:ditioning)?)\b/, "air-conditioning"],
+  [/\b(washer|laundry|washing machine)\b/, "washer"],
+  [/\b(ev[\s-]?charg(?:er|ing)|charger)\b/, "ev-charger"],
+  [/\b(bbq|barbecue|grill)\b/, "bbq-grill"],
 ];
 
 const STOP_WORDS = new Set(
-  "a an and the with for in on at to of or near by under below less than max up no more than night nights per stay place somewhere something that has have who is are i we me us my our want looking need some friendly".split(
+  "a an and the with for in on at to of or near by under below less than max up no more than night nights per stay stays place somewhere something that has have who is are i we me us my our want looking need some friendly".split(
     " ",
   ),
 );
 
-export function parseQuery(input: string): ParsedQuery {
-  let rest = input.toLowerCase();
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// `cities` are the cities in the data: a city only filters when it's one of them,
+// so a phrase like "in the woods" never becomes a place.
+export function parseQuery(input: string, { cities = [] }: { cities?: string[] } = {}): ParsedQuery {
+  let rest = ` ${input.toLowerCase()} `;
   const take = (pattern: RegExp) => {
     const match = rest.match(pattern);
     if (match) rest = rest.replace(match[0], " ");
@@ -74,6 +91,48 @@ export function parseQuery(input: string): ParsedQuery {
     }
   }
 
+  // Places before types and amenities, so "Cannon Beach" is a city, not a beach stay.
+  // Longest names first, so "South Lake Tahoe" wins over any shorter overlap.
+  let city: string | undefined;
+  for (const name of [...cities].sort((a, b) => b.length - a.length)) {
+    if (take(new RegExp(`\\b(?:in|near)?\\s*${escape(name.toLowerCase())}\\b`))) {
+      city = name;
+      break;
+    }
+  }
+
+  let region: string | undefined;
+  if (!city) {
+    for (const name of Object.keys(STATES).sort((a, b) => b.length - a.length)) {
+      if (take(new RegExp(`\\b(?:in|near)?\\s*${name}\\b`))) {
+        region = STATES[name];
+        break;
+      }
+    }
+  }
+  if (!city && !region) {
+    // Two-letter codes are too ambiguous on their own ("ok", "me"), so only after in/near.
+    const match = rest.match(/\b(?:in|near)\s+([a-z]{2})\b/);
+    const code = match?.[1].toUpperCase();
+    if (match && code && Object.values(STATES).includes(code)) {
+      rest = rest.replace(match[0], " ");
+      region = code;
+    }
+  }
+
+  // Anywhere else in the world: always a filter, so a place with no stays
+  // returns nothing instead of every stay ranked by how close it sounds.
+  let country: string | undefined;
+  let place: string | undefined;
+  if (!city && !region) {
+    for (const name of Object.keys(WORLD_PLACES).sort((a, b) => b.length - a.length)) {
+      if (take(new RegExp(`(?:^|[^a-z.])(?:in\\s+|near\\s+)?${escape(name)}(?![a-z])`))) {
+        ({ country, label: place } = WORLD_PLACES[name]);
+        break;
+      }
+    }
+  }
+
   const pets = !!take(PET_PATTERN);
 
   const amenities: Amenity[] = [];
@@ -93,5 +152,20 @@ export function parseQuery(input: string): ParsedQuery {
     .split(/[^a-z-]+/)
     .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
 
-  return { maxPrice, guests, pets, type, amenities, softTerms };
+  return { maxPrice, guests, pets, type, amenities, region, city, country, place, softTerms };
+}
+
+// False when only soft terms are left: results are then the closest matches,
+// not stays that meet anything the guest asked for exactly.
+export function hasExactFilters(query: ParsedQuery) {
+  return Boolean(
+    query.type ||
+      query.maxPrice !== undefined ||
+      query.guests !== undefined ||
+      query.pets ||
+      query.amenities.length > 0 ||
+      query.region ||
+      query.city ||
+      query.country,
+  );
 }

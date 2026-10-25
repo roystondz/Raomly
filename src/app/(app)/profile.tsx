@@ -1,53 +1,98 @@
-import { useClerk, useUser } from "@clerk/expo";
+import { useUser } from "@clerk/expo";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { View } from "react-native";
-import { usePostHog } from "posthog-react-native";
+import { Bell, BriefcaseBusiness, CircleHelp, CreditCard, FileText, Settings, UserRound } from "lucide-react-native";
+import type { ReactNode } from "react";
+import { Alert, ScrollView, View } from "react-native";
 
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { ListGroup, ListRow } from "@/components/ui/list-group";
+import { Logo } from "@/components/ui/logo";
+import { PolicyCard } from "@/components/ui/policy-card";
+import { SectionLabel } from "@/components/ui/section-label";
 import { Text } from "@/components/ui/text";
+import { useSavedStays } from "@/hooks/use-saved-stays";
 
-// PLACEHOLDER: the real profile comes with its own design.
+// No booking yet, so there are no trips to count.
+const TRIP_COUNT = 0;
+
+const comingSoon = (feature: string) => Alert.alert("Coming soon", `${feature} isn't available yet.`);
+
 export default function ProfileScreen() {
   const router = useRouter();
-  const posthog = usePostHog();
   const { user } = useUser();
-  const { signOut } = useClerk();
+  const saved = useSavedStays();
   const email = user?.primaryEmailAddress?.emailAddress;
 
-  async function handleSignOut() {
-    posthog?.capture("user_signed_out");
-    await signOut();
-  }
-
   return (
-    <View className="flex-1 justify-center gap-6 bg-surface px-6">
-      <View className="items-center gap-3">
-        <View className="size-21 overflow-hidden rounded-full bg-primary-50">
+    <ScrollView
+      className="flex-1 bg-surface"
+      contentContainerClassName="gap-8 px-5 pb-8 pt-2"
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      <View className="flex-row items-center justify-between">
+        <Logo height={28} />
+        <IconButton
+          variant="filled-sm"
+          icon={Settings}
+          accessibilityLabel="Settings"
+          onPress={() => router.push("/settings")}
+        />
+      </View>
+
+      {/* Only real data: no home city, tier badge or guest rating exist yet. */}
+      <View className="flex-row items-center gap-4">
+        <View className="size-20 overflow-hidden rounded-full bg-primary-50">
           {user?.imageUrl ? (
             <Image source={{ uri: user.imageUrl }} style={{ flex: 1 }} contentFit="cover" accessibilityIgnoresInvertColors />
           ) : null}
         </View>
-        <View className="items-center gap-1">
-          <Text variant="title" accessibilityRole="header">
+        <View className="flex-1 gap-1">
+          <Text variant="title-lg" accessibilityRole="header" numberOfLines={2}>
             {user?.fullName || email}
           </Text>
-          {user?.fullName ? <Text tone="muted">{email}</Text> : null}
+          {user?.fullName && email ? (
+            <Text variant="caption-regular" tone="muted" numberOfLines={1}>
+              {email}
+            </Text>
+          ) : null}
+          <Text variant="caption" accessibilityLabel={`${TRIP_COUNT} trips, ${saved.size} saved`}>
+            {TRIP_COUNT} trips · {saved.size} saved
+          </Text>
         </View>
       </View>
-      <View className="gap-3">
-        {/* The route guard returns to onboarding once the session ends. */}
-        <Button variant="secondary" title="Sign out" onPress={handleSignOut} />
-        {__DEV__ ? (
-          <Button
-            size="sm"
-            variant="secondary"
-            title="Open design system"
-            className="self-center"
-            onPress={() => router.push("/design-system")}
-          />
-        ) : null}
+
+      <Section title="Account">
+        <ListRow variant="lg" icon={UserRound} label="Personal info" onPress={() => router.push("/personal-info")} />
+        <ListRow variant="lg" icon={CreditCard} label="Payment methods" onPress={() => comingSoon("Payment methods")} />
+        <ListRow variant="lg" icon={BriefcaseBusiness} label="Trips" onPress={() => router.navigate("/trips")} />
+      </Section>
+
+      <Section title="Preferences">
+        <ListRow variant="lg" icon={Bell} label="Notifications" onPress={() => comingSoon("Notifications")} />
+        <ListRow variant="lg" icon={CircleHelp} label="Help & support" onPress={() => comingSoon("Help & support")} />
+      </Section>
+
+      <View>
+        <SectionLabel label="Policies" />
+        <PolicyCard
+          size="lg"
+          icon={FileText}
+          title="Roamly policies"
+          description="Cancellation, payment, damage and more."
+          onPress={() => router.push("/policies")}
+        />
       </View>
+    </ScrollView>
+  );
+}
+
+// A labelled section of hairline rows.
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View>
+      <SectionLabel label={title} />
+      <ListGroup>{children}</ListGroup>
     </View>
   );
 }

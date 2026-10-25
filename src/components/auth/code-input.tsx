@@ -37,7 +37,7 @@ export function CodeInput({ value, onChangeText, error, editable = true, autoFoc
                 error
                   ? "border-2 border-danger bg-surface-muted"
                   : active
-                    ? "border-2 border-lavender-400 bg-lavender-50"
+                    ? "border-2 border-accent-400 bg-accent-50"
                     : "border border-transparent bg-surface-muted",
               )}
             >

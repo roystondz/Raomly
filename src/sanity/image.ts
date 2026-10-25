@@ -10,5 +10,5 @@ export function sanityImage(url: string, width: number, height: number) {
     fit: "crop",
     auto: "format",
   });
-  return `${url}?${params}`;
+  return `${url}${url.includes("?") ? "&" : "?"}${params}`;
 }

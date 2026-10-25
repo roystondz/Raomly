@@ -47,7 +47,7 @@ export function TextField({
         label ? "h-6 p-0 font-sans text-input" : "h-full flex-1 font-sans-medium text-input",
       )}
       placeholderTextColor={colors.subtle}
-      selectionColor={colors["lavender-600"]}
+      selectionColor={colors["accent-600"]}
       secureTextEntry={variant === "password" && hidden}
       accessibilityLabel={label ?? props.accessibilityLabel}
       accessibilityHint={error ?? props.accessibilityHint}
@@ -69,9 +69,9 @@ export function TextField({
           "flex-row items-center gap-3 rounded-lg corner-squircle px-4",
           label ? "h-15" : "h-14",
           error
-            ? cn("border-2 border-danger", focused ? "bg-lavender-50" : "bg-surface-muted")
+            ? cn("border-2 border-danger", focused ? "bg-accent-50" : "bg-surface-muted")
             : focused
-              ? "border-2 border-lavender-400 bg-lavender-50"
+              ? "border-2 border-accent-400 bg-accent-50"
               : variant === "search"
                 ? "border border-line bg-surface"
                 : "border-2 border-transparent bg-surface-muted",

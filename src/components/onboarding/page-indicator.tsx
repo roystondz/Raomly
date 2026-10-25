@@ -10,7 +10,7 @@ export function PageIndicator({ count, index }: { count: number; index: number }
       className="flex-row gap-2"
     >
       {Array.from({ length: count }, (_, i) => (
-        <View key={i} className={cn("h-1 w-8 rounded-full", i === index ? "bg-lavender-400" : "bg-line")} />
+        <View key={i} className={cn("h-1 w-8 rounded-full", i === index ? "bg-accent-400" : "bg-line")} />
       ))}
     </View>
   );

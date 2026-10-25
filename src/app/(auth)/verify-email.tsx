@@ -1,9 +1,9 @@
 import { useSignIn, useSignUp } from "@clerk/expo";
-import { Redirect, useLocalSearchParams } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { usePostHog } from "posthog-react-native";
 
-import { fieldError, globalError } from "@/auth/clerk-errors";
+import { fieldError, globalError, hasErrorCode } from "@/auth/clerk-errors";
 import { navigateAfterAuth } from "@/auth/finalize";
 import { validateCode } from "@/auth/validation";
 import { AuthScreen } from "@/components/auth/auth-screen";
@@ -21,6 +21,7 @@ const RESEND_COOLDOWN_S = 30;
 export default function VerifyEmailScreen() {
   const { flow } = useLocalSearchParams<{ flow?: "sign-up" | "sign-in" }>();
   const posthog = usePostHog();
+  const router = useRouter();
   const isSignUp = flow !== "sign-in";
   const signUpState = useSignUp();
   const signInState = useSignIn();
@@ -49,7 +50,18 @@ export default function VerifyEmailScreen() {
   if (!waiting && !loading) return <Redirect href={isSignUp ? "/sign-up" : "/sign-in"} />;
 
   const email = isSignUp ? signUp.emailAddress : signIn.identifier;
-  const codeError = localError ?? fieldError(errors, "code") ?? globalError(errors);
+  // Clerk answers "signed_out" when the device's Clerk client changed after the
+  // code was sent, so this attempt can't be finished. Only a restart helps.
+  const expired = hasErrorCode(errors, "signed_out");
+  const codeError = expired
+    ? `This ${isSignUp ? "sign-up" : "sign-in"} timed out on this device. Start again to get a new code.`
+    : (localError ?? fieldError(errors, "code") ?? globalError(errors));
+
+  // Back to the form underneath (its fields are kept), then drop the old attempt.
+  async function startAgain() {
+    if (router.canGoBack()) router.back();
+    await (isSignUp ? signUp.reset() : signIn.reset());
+  }
 
   async function submit(value = code) {
     const invalid = validateCode(value);
@@ -96,7 +108,7 @@ export default function VerifyEmailScreen() {
         </>
       }
       footer={
-        cooldown > 0 ? (
+        expired ? null : cooldown > 0 ? (
           <Text variant="caption-regular" tone="muted">
             Resend in 0:{String(cooldown).padStart(2, "0")}
           </Text>
@@ -117,7 +129,11 @@ export default function VerifyEmailScreen() {
         autoFocus
       />
       {resent ? <Alert tone="success" message="We sent a new code." onDismiss={() => setResent(false)} className="mt-6" /> : null}
-      <Button title="Verify" loading={loading} disabled={code.length < 6} onPress={() => submit()} className="mt-6" />
+      {expired ? (
+        <Button title="Start again" onPress={startAgain} className="mt-6" />
+      ) : (
+        <Button title="Verify" loading={loading} disabled={code.length < 6} onPress={() => submit()} className="mt-6" />
+      )}
     </AuthScreen>
   );
 }

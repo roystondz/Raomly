@@ -1,37 +1,31 @@
-import Constants from 'expo-constants'
 import PostHog from 'posthog-react-native'
 
-const extra = Constants.expoConfig?.extra
-const projectToken = extra?.posthogProjectToken as string | undefined
-const host = extra?.posthogHost as string | undefined
+// EXPO_PUBLIC_ values are inlined at bundle time, like the Clerk key in the root layout.
+const projectToken = process.env.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN
+const host = process.env.EXPO_PUBLIC_POSTHOG_HOST
+const configured = Boolean(projectToken && host)
 
-if (__DEV__ && !projectToken) {
-  throw new Error(
-    'EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN is configured',
+// PostHog failures never block the app: without its variables, analytics is off.
+if (__DEV__ && !configured) {
+  console.warn(
+    'PostHog is off: set EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN and EXPO_PUBLIC_POSTHOG_HOST in .env, then restart the dev server.',
   )
 }
 
-if (__DEV__ && !host) {
-  throw new Error(
-    'EXPO_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once EXPO_PUBLIC_POSTHOG_HOST is configured',
-  )
-}
-
-export const posthog =
-  projectToken && host
-    ? new PostHog(projectToken, {
-        host,
-        captureAppLifecycleEvents: true,
-        logs: {
-          serviceName: 'roamly-mobile',
-        },
-        errorTracking: {
-          autocapture: {
-            uncaughtExceptions: true,
-            unhandledRejections: true,
-          },
-        },
-        debug: __DEV__,
-        preloadFeatureFlags: true,
-      })
-    : undefined
+// Always a client, so PostHogProvider always renders and screens can call usePostHog().
+// When unconfigured it's disabled; the SDK requires a non-empty key, hence the placeholder.
+export const posthog = new PostHog(projectToken || 'disabled', {
+  host,
+  disabled: !configured,
+  captureAppLifecycleEvents: true,
+  logs: {
+    serviceName: 'roamly-mobile',
+  },
+  errorTracking: {
+    autocapture: {
+      uncaughtExceptions: true,
+      unhandledRejections: true,
+    },
+  },
+  preloadFeatureFlags: true,
+})

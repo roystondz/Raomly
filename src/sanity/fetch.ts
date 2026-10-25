@@ -7,7 +7,7 @@ const path = `/v${apiVersion}/data/query/${dataset}`;
 const CDN_URL = `https://${projectId}.apicdn.sanity.io${path}`;
 const API_URL = `https://${projectId}.api.sanity.io${path}`;
 
-export type QueryParams = Record<string, string | number | boolean | null>;
+export type QueryParams = Record<string, string | number | boolean | null | string[]>;
 
 type FetchOptions = { signal?: AbortSignal; fresh?: boolean };
 

@@ -7,11 +7,12 @@ import { Text } from "@/components/ui/text";
 // PLACEHOLDER: trips arrive with booking.
 export default function TripsScreen() {
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-surface px-8">
-      <View className="size-16 items-center justify-center rounded-full bg-surface-muted">
-        <Icon icon={CalendarDays} size={28} />
+    <View className="flex-1 items-center justify-center gap-4 bg-surface px-8">
+      {/* Editorial empty state: a hairline-framed mark, a serif title. */}
+      <View className="size-20 items-center justify-center rounded-lg border border-line">
+        <Icon icon={CalendarDays} size={30} color="accent-600" />
       </View>
-      <Text variant="title-sm" accessibilityRole="header">
+      <Text variant="title" accessibilityRole="header">
         No trips yet
       </Text>
       <Text tone="muted" className="text-center">

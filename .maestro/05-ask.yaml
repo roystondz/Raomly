@@ -1,0 +1,57 @@
+# Demo stage 5: Ask about this stay. Chips and typed questions get answer cards.
+appId: com.anonymous.roamly
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Find your next stay"
+    timeout: 30000
+- tapOn: "Search"
+- tapOn: "Describe your stay"
+- inputText: "modern cabin with a hot tub in Lake Arrowhead"
+- pressKey: Enter
+- tapOn: "Modern Cabin with Hot Tub.*"
+- extendedWaitUntil:
+    visible: "Book this stay"
+    timeout: 20000
+- tapOn: "Ask about policies.*"
+- extendedWaitUntil:
+    visible: "Ask about this stay"
+    timeout: 10000
+- takeScreenshot: 05-ask-intro
+# A chip sends its question.
+- tapOn: "Pets"
+- extendedWaitUntil:
+    visible: "Pets. Source: House rules."
+    timeout: 10000
+- takeScreenshot: 05-ask-pets-chip
+# A typed question with two topics.
+- tapOn: "Ask about this stay…"
+# Let the keyboard finish lifting the input before typing.
+- waitForAnimationToEnd
+- inputText: "what time is check in and can we smoke"
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "Smoking & parties. Source: House rules."
+    timeout: 10000
+- assertVisible: "Check-in. Source: House rules."
+- takeScreenshot: 05-ask-typed-two-topics
+# Nothing matches: point to support.
+- tapOn: "Ask about this stay…"
+# Let the keyboard finish lifting the input before typing.
+- waitForAnimationToEnd
+- inputText: "what is the weather like"
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "No answer found. Source: Roamly support."
+    timeout: 10000
+- takeScreenshot: 05-ask-no-answer
+# All policies from the header link.
+- tapOn: "See all policies"
+- extendedWaitUntil:
+    visible: "House rules"
+    timeout: 10000
+- takeScreenshot: 05-all-policies-sheet
+- scrollUntilVisible:
+    element: "Roamly policies"
+    direction: DOWN
+- takeScreenshot: 05-all-policies-roamly
