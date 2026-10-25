@@ -1,4 +1,4 @@
-claimport { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import { posthog } from "@/config/posthog";
 
