@@ -1,10 +1,16 @@
 import { ArrowRight, type LucideIcon } from "lucide-react-native";
-import { Pressable, View, type PressableProps } from "react-native";
+import { Platform, Pressable, View, type PressableProps } from "react-native";
 
+import { colors } from "@/theme";
 import { cn } from "@/utils/cn";
 
 import { Icon } from "./icon";
 import { Text } from "./text";
+
+// Android rows ripple, as Material rows do; iOS fades. Fixed per platform, so
+// the active: class never changes on a mounted row.
+const pressFeedback = Platform.OS === "android" ? "" : "active:opacity-70";
+const ripple = { color: colors["accent-50"] };
 
 const sizes = {
   md: { container: "py-3.5", icon: 22, title: "headline", description: "footnote" },
@@ -27,7 +33,8 @@ export function PolicyCard({ icon, title, description, size = "md", className, .
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${description}`}
-      className={cn("flex-row items-center gap-4 border-b border-line active:opacity-70", s.container, className)}
+      android_ripple={ripple}
+      className={cn("flex-row items-center gap-4 border-b border-line", pressFeedback, s.container, className)}
       {...props}
     >
       <Icon icon={icon} size={s.icon} color="accent-600" />

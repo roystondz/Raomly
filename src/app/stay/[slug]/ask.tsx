@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   TextInput,
@@ -88,7 +87,7 @@ export default function AskScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
       className="flex-1 bg-surface"
       style={{ paddingTop: insets.top }}
     >

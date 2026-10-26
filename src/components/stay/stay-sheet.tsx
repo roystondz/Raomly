@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { SheetGrabber } from "@/components/ui/sheet-grabber";
+import { useAndroidBottomInset } from "@/hooks/use-android-bottom-inset";
 import { useStay } from "@/hooks/use-stay";
 import type { Policy, StayDetails } from "@/sanity/queries";
 import { colors } from "@/theme";
@@ -17,6 +19,7 @@ export function StaySheet({ children, scroll = true }: { children: Content; scro
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { stay, policies, loading, error, retry } = useStay(slug);
   const insets = useSafeAreaInsets();
+  const bottomInset = useAndroidBottomInset();
 
   const body = stay ? (
     children({ stay, policies })
@@ -30,8 +33,13 @@ export function StaySheet({ children, scroll = true }: { children: Content; scro
   ) : null;
 
   if (!scroll) {
-    // Sized to its content; the sheet adds the home-indicator space below it.
-    return <View className="gap-5 bg-surface px-5 pb-4 pt-8">{body}</View>;
+    // Sized to its content. iOS adds the home-indicator space below it; Android needs bottomInset.
+    return (
+      <View className="gap-5 bg-surface px-5 pt-8" style={{ paddingBottom: 16 + bottomInset }}>
+        <SheetGrabber />
+        {body}
+      </View>
+    );
   }
   return (
     <ScrollView
@@ -39,6 +47,7 @@ export function StaySheet({ children, scroll = true }: { children: Content; scro
       contentContainerClassName="gap-6 px-5 pt-8"
       contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
     >
+      <SheetGrabber />
       {body}
     </ScrollView>
   );

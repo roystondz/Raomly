@@ -105,5 +105,11 @@
   @media android {
     --font-sans: "PlusJakartaSans-Regular";
     --font-serif: "Fraunces-SemiBold";
+    /* Android clips glyphs outside the line box, so tight serif lines lose
+       their descenders ("y", "g"). Same type, a little more line height. */
+    --text-display--line-height: 1.15;
+    --text-hero--line-height: 1.15;
+    --text-title-lg--line-height: 1.15;
+    --text-title-xs--line-height: 1.2;
   }
 }

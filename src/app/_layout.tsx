@@ -2,6 +2,7 @@ import "../../global.css";
 
 import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
 import { SplashScreen, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { LogBox } from "react-native";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 import { useEffect, useRef } from "react";
@@ -97,6 +98,9 @@ export default function RootLayout() {
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <PostHogProvider client={posthog}>
         <PostHogIdentity />
+        {/* Base style for screens that don't set one. Without it, Android keeps
+            the light icons a photo screen set after that screen closes. */}
+        <StatusBar style="dark" />
         <RootStack />
       </PostHogProvider>
     </ClerkProvider>

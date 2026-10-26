@@ -23,6 +23,7 @@ import { PressableScale } from "@/components/ui/pressable-scale";
 import { Text } from "@/components/ui/text";
 import type { StayType } from "@/search/types";
 import { useHomeStays } from "@/hooks/use-home-stays";
+import { useTabTopInset } from "@/hooks/use-tab-top-inset";
 import { colors } from "@/theme";
 
 const EXAMPLE_QUERY = "quiet pet friendly cabin with hot tub";
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const posthog = usePostHog();
   const { user } = useUser();
+  const topInset = useTabTopInset();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StayType | null>(null);
   // Featured stays lead the list; the query already orders them.
@@ -67,7 +69,8 @@ export default function HomeScreen() {
   return (
     <ScrollView
       className="flex-1 bg-surface"
-      contentContainerClassName="px-5 pb-8 pt-2"
+      contentContainerClassName="px-5 pb-8"
+      contentContainerStyle={{ paddingTop: 8 + topInset }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"

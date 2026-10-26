@@ -12,6 +12,7 @@ import { PolicyCard } from "@/components/ui/policy-card";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Text } from "@/components/ui/text";
 import { useSavedStays } from "@/hooks/use-saved-stays";
+import { useTabTopInset } from "@/hooks/use-tab-top-inset";
 
 // No booking yet, so there are no trips to count.
 const TRIP_COUNT = 0;
@@ -22,12 +23,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useUser();
   const saved = useSavedStays();
+  const topInset = useTabTopInset();
   const email = user?.primaryEmailAddress?.emailAddress;
 
   return (
     <ScrollView
       className="flex-1 bg-surface"
-      contentContainerClassName="gap-8 px-5 pb-8 pt-2"
+      contentContainerClassName="gap-8 px-5 pb-8"
+      contentContainerStyle={{ paddingTop: 8 + topInset }}
       contentInsetAdjustmentBehavior="automatic"
     >
       <View className="flex-row items-center justify-between">

@@ -1,6 +1,8 @@
 import { colors } from "@/theme";
 
 // Native form sheet look shared by every sheet route (stay and profile).
+// The grabber and corner radius are iOS-only; Android sheets draw SheetGrabber
+// and add useAndroidBottomInset themselves.
 export const sheetOptions = {
   presentation: "formSheet",
   sheetGrabberVisible: true,

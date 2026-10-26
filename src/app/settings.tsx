@@ -4,7 +4,9 @@ import { usePostHog } from "posthog-react-native";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
+import { SheetGrabber } from "@/components/ui/sheet-grabber";
 import { Text } from "@/components/ui/text";
+import { useAndroidBottomInset } from "@/hooks/use-android-bottom-inset";
 
 // Opened from the Profile gear. Holds Sign out, which the design has no row for.
 export default function SettingsSheet() {
@@ -13,6 +15,7 @@ export default function SettingsSheet() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const email = user?.primaryEmailAddress?.emailAddress;
+  const bottomInset = useAndroidBottomInset();
 
   async function handleSignOut() {
     posthog.capture("user_signed_out");
@@ -21,7 +24,8 @@ export default function SettingsSheet() {
   }
 
   return (
-    <View className="gap-5 bg-surface px-5 pb-4 pt-8">
+    <View className="gap-5 bg-surface px-5 pt-8" style={{ paddingBottom: 16 + bottomInset }}>
+      <SheetGrabber />
       <View className="gap-1">
         <Text variant="title-sm" accessibilityRole="header">
           Settings

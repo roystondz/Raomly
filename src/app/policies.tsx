@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PolicyText } from "@/components/stay/policy-text";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { SheetGrabber } from "@/components/ui/sheet-grabber";
 import { Text } from "@/components/ui/text";
 import { usePolicies } from "@/hooks/use-policies";
 import { colors } from "@/theme";
@@ -20,6 +21,7 @@ export default function PoliciesSheet() {
       contentContainerClassName="gap-5 px-5 pt-8"
       contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
     >
+      <SheetGrabber />
       <Text variant="title-sm" accessibilityRole="header">
         Roamly policies
       </Text>

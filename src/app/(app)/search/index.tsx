@@ -24,6 +24,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { toggleSavedStay, useSavedStays } from "@/hooks/use-saved-stays";
 import { useStaySearch } from "@/hooks/use-stay-search";
+import { useTabTopInset } from "@/hooks/use-tab-top-inset";
 import type { SearchStay } from "@/search/build-query";
 import { isChipSelected, toggleChip } from "@/search/chips";
 import { hasExactFilters } from "@/search/parse-query";
@@ -58,6 +59,7 @@ function sortStays(stays: SearchStay[], sort: SortKey) {
 
 export default function SearchScreen() {
   const router = useRouter();
+  const topInset = useTabTopInset();
   const posthog = usePostHog();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const search = useStaySearch();
@@ -146,7 +148,8 @@ export default function SearchScreen() {
   return (
     <ScrollView
       className="flex-1 bg-surface"
-      contentContainerClassName="pb-8 pt-2"
+      contentContainerClassName="pb-8"
+      contentContainerStyle={{ paddingTop: 8 + topInset }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"

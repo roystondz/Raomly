@@ -1,7 +1,8 @@
 import { ChevronRight, type LucideIcon } from "lucide-react-native";
 import { Children, Fragment, type ReactNode } from "react";
-import { Pressable, View, type PressableProps } from "react-native";
+import { Platform, Pressable, View, type PressableProps } from "react-native";
 
+import { colors } from "@/theme";
 import { cn } from "@/utils/cn";
 
 import { Icon } from "./icon";
@@ -22,6 +23,11 @@ export function ListGroup({ children, className }: { children: ReactNode; classN
   );
 }
 
+// Android rows ripple, as Material rows do; iOS fades. Fixed per platform, so
+// the active: class never changes on a mounted row.
+const pressFeedback = Platform.OS === "android" ? "" : "active:opacity-70";
+const ripple = { color: colors["accent-50"] };
+
 const variants = {
   plain: { container: "min-h-13 gap-4 py-3", icon: 22, label: "caption", chevron: 18 },
   // Profile and settings lists.
@@ -41,7 +47,8 @@ export function ListRow({ icon, label, variant = "plain", className, ...props }:
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={cn("flex-row items-center active:opacity-70", v.container, className)}
+      android_ripple={ripple}
+      className={cn("flex-row items-center", pressFeedback, v.container, className)}
       {...props}
     >
       <Icon icon={icon} size={v.icon} />

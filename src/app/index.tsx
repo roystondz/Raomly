@@ -11,12 +11,14 @@ import { Button } from "@/components/ui/button";
 import { GoogleMark } from "@/components/ui/google-mark";
 import { Icon } from "@/components/ui/icon";
 import { Logo } from "@/components/ui/logo";
+import { useAndroidBottomInset } from "@/hooks/use-android-bottom-inset";
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [footerHeight, setFooterHeight] = useState(0);
+  const bottomInset = useAndroidBottomInset();
   const tone = slides[index].tone;
 
   return (
@@ -42,7 +44,8 @@ export default function OnboardingScreen() {
 
       <View
         onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
-        className="absolute inset-x-0 bottom-0 gap-3 px-6 pb-5"
+        className="absolute inset-x-0 bottom-0 gap-3 px-6"
+        style={{ paddingBottom: 20 + bottomInset }}
       >
         <Button title="Get started" trailing={<Icon icon={ArrowRight} />} onPress={() => router.push("/sign-up")} />
         <Button
